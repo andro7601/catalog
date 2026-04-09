@@ -52,20 +52,76 @@ img {
 
 .app-shell {
   min-height: 100vh;
-  padding: 48px 24px;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
 }
 
-.app-shell__content {
-  width: min(100%, 720px);
+.site-header,
+.site-footer {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.site-footer {
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 0;
+  margin-top: auto;
+}
+
+.site-header__inner,
+.site-footer__inner,
+.page-shell {
+  width: min(100%, 1200px);
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.site-header__inner,
+.site-footer__inner {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.site-header__brand,
+.site-footer__brand {
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.site-header__nav,
+.site-footer__nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.site-link {
+  color: #475569;
+}
+
+.site-link--active {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.page-shell {
+  flex: 1;
+  padding-top: 48px;
+  padding-bottom: 48px;
+}
+
+.page-card {
   padding: 40px;
   border: 1px solid #dbe2ea;
   border-radius: 24px;
   background: #ffffff;
 }
 
-.app-shell__eyebrow {
+.page-card__eyebrow {
   margin-bottom: 12px;
   font-size: 14px;
   font-weight: 700;
@@ -74,14 +130,42 @@ img {
   color: #2563eb;
 }
 
-.app-shell__title {
+.page-card__title {
   margin-bottom: 12px;
   font-size: clamp(32px, 5vw, 48px);
   line-height: 1.1;
   color: #0f172a;
 }
 
-.app-shell__text {
+.page-card__text {
+  max-width: 720px;
   font-size: 18px;
   color: #475569;
+}
+
+.page-card__meta {
+  margin-top: 24px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+@media (max-width: 768px) {
+  .site-header__inner,
+  .site-footer__inner {
+    min-height: 64px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+
+  .page-shell {
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+
+  .page-card {
+    padding: 24px;
+  }
 }
