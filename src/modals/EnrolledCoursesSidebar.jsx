@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAppContext } from '../AppContext'
-import courseCardReference from '../assets/course-card-reference.jpg'
 import { getEnrollments } from '../api/enrollments.api'
+import courseCardReference from '../assets/course-card-reference.jpg'
 import Backdrop from './Backdrop'
 
 function getCourseEntity(item) {
@@ -65,6 +65,11 @@ function getEnrollmentSchedule(item) {
   }
 }
 
+function formatPrice(value) {
+  const numericValue = Number(value ?? 0)
+  return `$${Math.round(numericValue)}`
+}
+
 function EnrolledCoursesSidebar({ isOpen, onClose }) {
   const { isAuthenticated } = useAppContext()
   const [courses, setCourses] = useState([])
@@ -110,6 +115,11 @@ function EnrolledCoursesSidebar({ isOpen, onClose }) {
     }
   }, [isAuthenticated, isOpen])
 
+  const totalPrice = useMemo(
+    () => courses.reduce((sum, course) => sum + getEnrollmentPrice(course), 0),
+    [courses],
+  )
+
   if (!isOpen) {
     return null
   }
@@ -132,6 +142,19 @@ function EnrolledCoursesSidebar({ isOpen, onClose }) {
             ×
           </button>
         </div>
+
+        {!isLoading && !errorMessage ? (
+          <div className="sidebar-shell__summary">
+            <div className="sidebar-shell__summary-card">
+              <span className="sidebar-shell__summary-label">Total Enrollments</span>
+              <strong className="sidebar-shell__summary-value">{courses.length}</strong>
+            </div>
+            <div className="sidebar-shell__summary-card">
+              <span className="sidebar-shell__summary-label">Total Price</span>
+              <strong className="sidebar-shell__summary-value">{formatPrice(totalPrice)}</strong>
+            </div>
+          </div>
+        ) : null}
 
         <div className="sidebar-shell__list">
           {errorMessage ? <p className="sidebar-shell__empty-text">{errorMessage}</p> : null}
@@ -179,66 +202,71 @@ function EnrolledCoursesSidebar({ isOpen, onClose }) {
 
           {!isLoading &&
             courses.map((course) => {
-            const progressValue = getProgressValue(course)
-            const schedule = getEnrollmentSchedule(course)
+              const progressValue = getProgressValue(course)
+              const schedule = getEnrollmentSchedule(course)
 
-            return (
-              <article className="sidebar-shell__course" key={course.id}>
-                <div
-                  className="sidebar-shell__thumb"
-                  style={
-                    getCourseImage(course)
-                      ? { backgroundImage: `url(${getCourseImage(course)})` }
-                      : undefined
-                  }
-                />
+              return (
+                <article className="sidebar-shell__course" key={course.id}>
+                  <div
+                    className="sidebar-shell__thumb"
+                    style={
+                      getCourseImage(course)
+                        ? { backgroundImage: `url(${getCourseImage(course)})` }
+                        : undefined
+                    }
+                  />
 
-                <div className="sidebar-shell__course-body">
-                  <div className="sidebar-shell__course-top">
-                    <div>
-                      <p className="sidebar-shell__course-instructor">
-                        Instructor {getInstructorName(course)}
-                      </p>
-                      <h3 className="sidebar-shell__item-title">{getCourseTitle(course)}</h3>
-                    </div>
-                    <span className="sidebar-shell__course-rating">
-                      {getCourseRating(course)}
-                    </span>
-                  </div>
-
-                  <div className="sidebar-shell__course-meta">
-                    <p className="sidebar-shell__item-text">
-                      Final price {`$${Math.round(getEnrollmentPrice(course))}`}
-                    </p>
-                    <p className="sidebar-shell__item-text">{schedule.weeklyLabel}</p>
-                    <p className="sidebar-shell__item-text">{schedule.timeLabel}</p>
-                    <p className="sidebar-shell__item-text">{schedule.sessionLabel}</p>
-                    {schedule.location ? (
-                      <p className="sidebar-shell__item-text">{schedule.location}</p>
-                    ) : null}
-                  </div>
-
-                  <div className="sidebar-shell__course-bottom">
-                    <div className="sidebar-shell__progress-block">
-                      <span className="sidebar-shell__progress-label">
-                        {progressValue}% Complete
-                      </span>
-                      <div className="sidebar-shell__progress">
-                        <span
-                          className="sidebar-shell__progress-bar"
-                          style={{ width: `${progressValue}%` }}
-                        />
+                  <div className="sidebar-shell__course-body">
+                    <div className="sidebar-shell__course-top">
+                      <div>
+                        <p className="sidebar-shell__course-instructor">
+                          Instructor {getInstructorName(course)}
+                        </p>
+                        <h3 className="sidebar-shell__item-title">{getCourseTitle(course)}</h3>
                       </div>
+                      <span className="sidebar-shell__course-rating">
+                        {getCourseRating(course)}
+                      </span>
                     </div>
 
-                    <Link className="sidebar-shell__view" to={`/courses/${getCourseId(course)}`}>
-                      View
-                    </Link>
+                    <div className="sidebar-shell__course-meta">
+                      <p className="sidebar-shell__item-text">
+                        Final price {formatPrice(getEnrollmentPrice(course))}
+                      </p>
+                      <p className="sidebar-shell__item-text">
+                        {schedule.weeklyLabel} • {schedule.timeLabel}
+                      </p>
+                      <p className="sidebar-shell__item-text">{schedule.sessionLabel}</p>
+                      {schedule.location ? (
+                        <p className="sidebar-shell__item-text">{schedule.location}</p>
+                      ) : null}
+                    </div>
+
+                    <div className="sidebar-shell__course-bottom">
+                      <div className="sidebar-shell__progress-block">
+                        <span className="sidebar-shell__progress-label">
+                          {progressValue}% Complete
+                        </span>
+                        <div className="sidebar-shell__progress">
+                          <span
+                            className="sidebar-shell__progress-bar"
+                            style={{ width: `${progressValue}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <Link
+                        className="sidebar-shell__view"
+                        onClick={onClose}
+                        to={`/courses/${getCourseId(course)}`}
+                      >
+                        View
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              </article>
-            )
-          })}
+                </article>
+              )
+            })}
         </div>
       </aside>
     </div>

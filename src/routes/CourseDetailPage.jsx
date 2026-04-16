@@ -24,17 +24,17 @@ function getCourseImage(course) {
   return course?.image || courseCardReference
 }
 
-function getSessionPriceModifier(sessionType) {
-  return Number(sessionType?.priceModifier ?? 0)
-}
-
 function formatPrice(value) {
   const numericValue = Number(value ?? 0)
   return `$${Math.round(numericValue)}`
 }
 
+function getSessionPriceModifier(sessionType) {
+  return Number(sessionType?.priceModifier ?? 0)
+}
+
 function getSessionTypeLabel(name) {
-  if (name === 'in_person') return 'In-person'
+  if (name === 'in_person') return 'In-Person'
   if (name === 'online') return 'Online'
   if (name === 'hybrid') return 'Hybrid'
   return 'Session'
@@ -55,6 +55,69 @@ function hasScheduleConflict(error) {
   return error?.status === 409 && error?.data?.conflicts?.length
 }
 
+function getTimeSlotMeta(slot) {
+  const label = slot?.label ?? ''
+  const lowerLabel = label.toLowerCase()
+
+  if (lowerLabel.includes('morning')) {
+    return { title: 'Morning', icon: 'sunrise' }
+  }
+
+  if (lowerLabel.includes('afternoon')) {
+    return { title: 'Afternoon', icon: 'sun' }
+  }
+
+  if (lowerLabel.includes('evening')) {
+    return { title: 'Evening', icon: 'moon' }
+  }
+
+  return { title: label || 'Time Slot', icon: 'clock' }
+}
+
+function TimeSlotIcon({ kind }) {
+  if (kind === 'sunrise') {
+    return (
+      <svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M5 15a7 7 0 0 1 14 0" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
+        <path d="M12 4v2.5M4.8 8.8l1.7 1.1M19.2 8.8l-1.7 1.1M4 18h16" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
+      </svg>
+    )
+  }
+
+  if (kind === 'sun') {
+    return (
+      <svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.6 5.6l1.7 1.7M16.7 16.7l1.7 1.7M18.4 5.6l-1.7 1.7M7.3 16.7l-1.7 1.7" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
+      </svg>
+    )
+  }
+
+  if (kind === 'moon') {
+    return (
+      <svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14.8 3.8a7.8 7.8 0 1 0 5.4 13.7a8.8 8.8 0 1 1-5.4-13.7Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M12 7.5v5l3 1.8" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" />
+    </svg>
+  )
+}
+
+function SessionTypeIcon() {
+  return (
+    <svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 8.5a3.2 3.2 0 1 0 0-6.4a3.2 3.2 0 0 0 0 6.4ZM16 10.2a2.7 2.7 0 1 0 0-5.4a2.7 2.7 0 0 0 0 5.4Z" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M3.5 18.8c0-2.8 2.5-5 5.6-5s5.6 2.2 5.6 5M13.6 18.8c.2-1.9 2-3.5 4.4-3.5c2.4 0 4.2 1.6 4.4 3.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
+    </svg>
+  )
+}
+
 function CourseDetailPage() {
   const { courseId } = useParams()
   const { authUser, isAuthenticated, openLogin, openProfile } = useAppContext()
@@ -68,7 +131,6 @@ function CourseDetailPage() {
   const [isLoadingCourse, setIsLoadingCourse] = useState(true)
   const [isLoadingOptions, setIsLoadingOptions] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [activeStep, setActiveStep] = useState(1)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [conflictData, setConflictData] = useState(null)
@@ -84,9 +146,7 @@ function CourseDetailPage() {
         setErrorMessage('')
         const response = await getCourseById(courseId)
 
-        if (!isMounted) {
-          return
-        }
+        if (!isMounted) return
 
         const nextCourse = response?.data ?? null
         setCourse(nextCourse)
@@ -100,13 +160,10 @@ function CourseDetailPage() {
 
         const weeklyResponse = await getWeeklySchedules(courseId)
 
-        if (!isMounted) {
-          return
-        }
+        if (!isMounted) return
 
         const nextWeeklySchedules = weeklyResponse?.data ?? []
         setWeeklySchedules(nextWeeklySchedules)
-        // Match reference UI: pre-select the first available option chain.
         if (nextWeeklySchedules[0]?.id != null) {
           setSelectedWeeklyScheduleId(String(nextWeeklySchedules[0].id))
         }
@@ -143,7 +200,6 @@ function CourseDetailPage() {
       }
 
       try {
-        // Clear dependent selections to avoid mismatched API calls/state.
         setTimeSlots([])
         setSelectedTimeSlotId('')
         setSessionTypes([])
@@ -152,9 +208,7 @@ function CourseDetailPage() {
         setIsLoadingOptions(true)
         const response = await getTimeSlots(courseId, selectedWeeklyScheduleId)
 
-        if (!isMounted) {
-          return
-        }
+        if (!isMounted) return
 
         const nextTimeSlots = response?.data ?? []
         setTimeSlots(nextTimeSlots)
@@ -190,7 +244,6 @@ function CourseDetailPage() {
       }
 
       try {
-        // Clear dependent selections to avoid stale pricing/state.
         setSessionTypes([])
         setSelectedSessionTypeId('')
 
@@ -201,9 +254,7 @@ function CourseDetailPage() {
           selectedTimeSlotId,
         )
 
-        if (!isMounted) {
-          return
-        }
+        if (!isMounted) return
 
         const nextSessionTypes = response?.data ?? []
         setSessionTypes(nextSessionTypes)
@@ -237,7 +288,6 @@ function CourseDetailPage() {
 
   const totalPrice = Number(course?.basePrice ?? 0) + getSessionPriceModifier(selectedSessionType)
   const averageRating = getAverageRating(course?.reviews ?? [])
-  const reviewCount = course?.reviews?.length ?? 0
   const enrollment = course?.enrollment ?? null
   const enrollmentInfo = getEnrollmentSessionInfo(enrollment)
   const progressValue = Number(enrollment?.progress ?? 0)
@@ -257,7 +307,7 @@ function CourseDetailPage() {
     }
 
     if (!authUser?.profileComplete) {
-      setErrorMessage('Complete your profile before enrolling.')
+      setErrorMessage('Please complete your profile to enroll in courses')
       openProfile()
       return
     }
@@ -296,9 +346,7 @@ function CourseDetailPage() {
   }
 
   async function handleCompleteCourse() {
-    if (!enrollment?.id) {
-      return
-    }
+    if (!enrollment?.id) return
 
     setIsSubmitting(true)
     setErrorMessage('')
@@ -402,9 +450,7 @@ function CourseDetailPage() {
 
           <div className="course-detail__stats-row">
             <div className="course-detail__stats-left">
-              <span className="course-detail__stat">
-                {course?.durationWeeks ?? 0} Weeks
-              </span>
+              <span className="course-detail__stat">{course?.durationWeeks ?? 0} Weeks</span>
               <span className="course-detail__stat">
                 {course?.durationHours ?? course?.duration_hours ?? 0} Hours
               </span>
@@ -429,11 +475,11 @@ function CourseDetailPage() {
 
           <div className="course-detail__instructor-row">
             <span className="course-detail__instructor-avatar">
-              {course?.instructor?.avatar ? (
-                <img alt="" src={course.instructor.avatar} />
-              ) : null}
+              {course?.instructor?.avatar ? <img alt="" src={course.instructor.avatar} /> : null}
             </span>
-            <span className="course-detail__instructor-name">{course?.instructor?.name ?? 'Unknown'}</span>
+            <span className="course-detail__instructor-name">
+              {course?.instructor?.name ?? 'Unknown'}
+            </span>
           </div>
 
           <div className="course-detail__description-block">
@@ -445,131 +491,104 @@ function CourseDetailPage() {
         <aside className="course-detail__sidebar">
           {!enrollment ? (
             <article className="course-detail__panel">
-              <div className="course-detail__steps">
-                <div className="course-detail__step">
-                  <button
-                    className="course-detail__step-row"
-                    onClick={() => setActiveStep(1)}
-                    type="button"
-                  >
-                    <span className="course-detail__step-number">1</span>
-                    <span className="course-detail__step-label">Weekly Schedule</span>
-                    <span
-                      className={`course-detail__step-chevron ${
-                        activeStep === 1
-                          ? 'course-detail__step-chevron--down'
-                          : 'course-detail__step-chevron--up'
-                      }`}
-                      aria-hidden="true"
-                    >
-                      {activeStep === 1 ? '⌄' : '⌃'}
-                    </span>
-                  </button>
-
-                  {activeStep === 1 ? (
-                    <div className="course-detail__segmented">
-                      {weeklySchedules.map((schedule) => {
-                        const isActive = String(schedule.id) === selectedWeeklyScheduleId
-                        return (
-                          <button
-                            className={`course-detail__segmented-button ${
-                              isActive ? 'course-detail__segmented-button--active' : ''
-                            }`}
-                            key={schedule.id}
-                            onClick={() => setSelectedWeeklyScheduleId(String(schedule.id))}
-                            type="button"
-                          >
-                            {schedule.label}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  ) : null}
+              <div className="course-detail__picker-group">
+                <div className="course-detail__picker-label">Weekly Schedule</div>
+                <div className="course-detail__weeks-grid">
+                  {weeklySchedules.map((schedule) => {
+                    const isActive = String(schedule.id) === selectedWeeklyScheduleId
+                    return (
+                      <button
+                        className={`course-detail__week-card ${
+                          isActive ? 'course-detail__week-card--active' : ''
+                        }`}
+                        key={schedule.id}
+                        onClick={() => setSelectedWeeklyScheduleId(String(schedule.id))}
+                        type="button"
+                      >
+                        {schedule.label}
+                      </button>
+                    )
+                  })}
                 </div>
+              </div>
 
-                <div className="course-detail__step">
-                  <button
-                    className="course-detail__step-row"
-                    onClick={() => setActiveStep(2)}
-                    type="button"
-                  >
-                    <span className="course-detail__step-number">2</span>
-                    <span className="course-detail__step-label">Time Slot</span>
-                    <span
-                      className={`course-detail__step-chevron ${
-                        activeStep === 2
-                          ? 'course-detail__step-chevron--down'
-                          : 'course-detail__step-chevron--up'
-                      }`}
-                      aria-hidden="true"
-                    >
-                      {activeStep === 2 ? '⌄' : '⌃'}
-                    </span>
-                  </button>
+              <div className="course-detail__picker-group">
+                <div className="course-detail__picker-label">Time Slots</div>
+                <div className="course-detail__time-slots-grid">
+                  {timeSlots.map((slot) => {
+                    const isActive = String(slot.id) === selectedTimeSlotId
+                    const slotMeta = getTimeSlotMeta(slot)
 
-                  {activeStep === 2 ? (
-                    <div className="course-detail__segmented">
-                      {timeSlots.map((slot) => {
-                        const isActive = String(slot.id) === selectedTimeSlotId
-                        return (
-                          <button
-                            className={`course-detail__segmented-button ${
-                              isActive ? 'course-detail__segmented-button--active' : ''
-                            }`}
-                            key={slot.id}
-                            onClick={() => setSelectedTimeSlotId(String(slot.id))}
-                            type="button"
-                          >
-                            {slot.label}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  ) : null}
+                    return (
+                      <button
+                        className={`course-detail__time-slot-card ${
+                          isActive ? 'course-detail__time-slot-card--active' : ''
+                        }`}
+                        key={slot.id}
+                        onClick={() => setSelectedTimeSlotId(String(slot.id))}
+                        type="button"
+                      >
+                        <span className="course-detail__time-slot-icon" aria-hidden="true">
+                          <TimeSlotIcon kind={slotMeta.icon} />
+                        </span>
+                        <span className="course-detail__time-slot-copy">
+                          <span className="course-detail__time-slot-title">{slotMeta.title}</span>
+                          <span className="course-detail__time-slot-range">{slot.label}</span>
+                        </span>
+                      </button>
+                    )
+                  })}
                 </div>
+              </div>
 
-                <div className="course-detail__step">
-                  <button
-                    className="course-detail__step-row"
-                    onClick={() => setActiveStep(3)}
-                    type="button"
-                  >
-                    <span className="course-detail__step-number">3</span>
-                    <span className="course-detail__step-label">Session Type</span>
-                    <span
-                      className={`course-detail__step-chevron ${
-                        activeStep === 3
-                          ? 'course-detail__step-chevron--down'
-                          : 'course-detail__step-chevron--up'
-                      }`}
-                      aria-hidden="true"
-                    >
-                      {activeStep === 3 ? '⌄' : '⌃'}
-                    </span>
-                  </button>
+              <div className="course-detail__picker-group">
+                <div className="course-detail__picker-label">Session Type</div>
+                <div className="course-detail__session-grid course-detail__session-grid--cards">
+                  {sessionTypes.map((sessionType) => {
+                    const isActive = String(sessionType.id) === selectedSessionTypeId
+                    const availableSeats = Number(sessionType.availableSeats ?? 0)
+                    const isBookedOut = availableSeats <= 0
+                    const modifier = getSessionPriceModifier(sessionType)
 
-                  {activeStep === 3 ? (
-                    <div className="course-detail__segmented">
-                      {sessionTypes.map((sessionType) => {
-                        const isActive = String(sessionType.id) === selectedSessionTypeId
-                        const availableSeats = Number(sessionType.availableSeats ?? 0)
-                        const isBookedOut = availableSeats <= 0
-                        return (
-                          <button
-                            className={`course-detail__segmented-button ${
-                              isActive ? 'course-detail__segmented-button--active' : ''
-                            }`}
-                            disabled={isBookedOut}
-                            key={sessionType.id}
-                            onClick={() => setSelectedSessionTypeId(String(sessionType.id))}
-                            type="button"
-                          >
+                    return (
+                      <button
+                        className={`course-detail__session-card ${
+                          isActive ? 'course-detail__session-card--active' : ''
+                        } ${isBookedOut ? 'course-detail__session-card--disabled' : ''}`}
+                        disabled={isBookedOut}
+                        key={sessionType.id}
+                        onClick={() => setSelectedSessionTypeId(String(sessionType.id))}
+                        type="button"
+                      >
+                        <span className="course-detail__session-card-icon" aria-hidden="true">
+                          <SessionTypeIcon />
+                        </span>
+                        <div className="course-detail__session-card-body">
+                          <div className="course-detail__session-card-title">
                             {getSessionTypeLabel(sessionType.name)}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  ) : null}
+                          </div>
+                          {sessionType.location ? (
+                            <div className="course-detail__session-location">
+                              {sessionType.location}
+                            </div>
+                          ) : null}
+                          <div className="course-detail__session-price">
+                            {modifier > 0 ? `+${formatPrice(modifier)}` : 'Included'}
+                          </div>
+                          <div className="course-detail__session-availability">
+                            {isBookedOut
+                              ? 'No Seats Available'
+                              : `${availableSeats} Seats Available`}
+                          </div>
+                          {availableSeats < 5 && availableSeats > 0 ? (
+                            <div className="course-detail__session-warning">
+                              Only {availableSeats} Seats Remaining
+                            </div>
+                          ) : null}
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
 
@@ -588,19 +607,23 @@ function CourseDetailPage() {
                     <span>Session Type</span>
                     <span>
                       {selectedSessionType
-                        ? `+${formatPrice(getSessionPriceModifier(selectedSessionType))}`
-                        : '+$0'}
+                        ? getSessionPriceModifier(selectedSessionType) > 0
+                          ? `+${formatPrice(getSessionPriceModifier(selectedSessionType))}`
+                          : 'Included'
+                        : 'Included'}
                     </span>
                   </div>
                 </div>
               </div>
 
+              {isLoadingOptions ? (
+                <p className="course-detail__panel-note">Loading available options...</p>
+              ) : null}
+
               <button
                 className="course-detail__enroll-button"
                 disabled={
                   isSubmitting ||
-                  !isAuthenticated ||
-                  !authUser?.profileComplete ||
                   !selectedWeeklyScheduleId ||
                   !selectedTimeSlotId ||
                   !selectedSessionTypeId ||
@@ -620,14 +643,10 @@ function CourseDetailPage() {
                   <div className="course-detail__notice-body">
                     <div className="course-detail__notice-title">Authentication Required</div>
                     <div className="course-detail__notice-text">
-                      You need sign in to your profile before enrolling in this course.
+                      You need to sign in to your profile before enrolling in this course.
                     </div>
                   </div>
-                  <button
-                    className="course-detail__notice-action"
-                    onClick={openLogin}
-                    type="button"
-                  >
+                  <button className="course-detail__notice-action" onClick={openLogin} type="button">
                     Sign In →
                   </button>
                 </div>
@@ -642,11 +661,7 @@ function CourseDetailPage() {
                       You need to fill in your profile details before enrolling in this course.
                     </div>
                   </div>
-                  <button
-                    className="course-detail__notice-action"
-                    onClick={openProfile}
-                    type="button"
-                  >
+                  <button className="course-detail__notice-action" onClick={openProfile} type="button">
                     Complete →
                   </button>
                 </div>
@@ -664,91 +679,31 @@ function CourseDetailPage() {
                 {progressValue >= 100 ? 'Completed' : 'Enrolled'}
               </div>
 
-              <div className="course-detail__schedule-list">
-                <div className="course-detail__schedule-item">
-                  <span className="course-detail__schedule-icon" aria-hidden="true">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        aria-hidden="true"
-                      >
-                        <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
-                        <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      </svg>
-                  </span>
-                  <span>{enrollmentInfo.weeklyLabel}</span>
+              <div className="course-detail__selection-summary">
+                <div className="course-detail__selection-item">
+                  <span className="course-detail__selection-label">Weekly Schedule</span>
+                  <span className="course-detail__selection-value">{enrollmentInfo.weeklyLabel}</span>
                 </div>
-                <div className="course-detail__schedule-item">
-                  <span className="course-detail__schedule-icon" aria-hidden="true">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        aria-hidden="true"
-                      >
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                        <line x1="12" y1="6" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        <line x1="12" y1="12" x2="16" y2="14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      </svg>
-                  </span>
-                  <span>{enrollmentInfo.timeLabel}</span>
+                <div className="course-detail__selection-item">
+                  <span className="course-detail__selection-label">Time Slot</span>
+                  <span className="course-detail__selection-value">{enrollmentInfo.timeLabel}</span>
                 </div>
-                <div className="course-detail__schedule-item">
-                  <span className="course-detail__schedule-icon" aria-hidden="true">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        aria-hidden="true"
-                      >
-                        <rect x="3" y="4" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="2" />
-                        <line x1="9" y1="20" x2="15" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        <line x1="12" y1="16" x2="12" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      </svg>
-                  </span>
-                  <span>{enrollmentInfo.sessionLabel}</span>
+                <div className="course-detail__selection-item">
+                  <span className="course-detail__selection-label">Session Type</span>
+                  <span className="course-detail__selection-value">{enrollmentInfo.sessionLabel}</span>
                 </div>
                 {enrollmentInfo.location ? (
-                  <div className="course-detail__schedule-item">
-                    <span className="course-detail__schedule-icon" aria-hidden="true">
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="M12 21s-7-4.35-7-11a7 7 0 0 1 14 0c0 6.65-7 11-7 11z"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinejoin="round"
-                          />
-                          <circle cx="12" cy="10" r="2" stroke="currentColor" strokeWidth="2" />
-                        </svg>
-                    </span>
-                    <span>{enrollmentInfo.location}</span>
+                  <div className="course-detail__selection-item">
+                    <span className="course-detail__selection-label">Location</span>
+                    <span className="course-detail__selection-value">{enrollmentInfo.location}</span>
                   </div>
                 ) : null}
               </div>
 
               <div className="course-detail__progress-block">
-                <div className="course-detail__progress-label">{progressValue}% Complete</div>
+                <div className="course-detail__progress-label">Course Progress: {progressValue}%</div>
                 <div className="course-detail__progress-track">
-                  <span
-                    className="course-detail__progress-fill"
-                    style={{ width: `${progressValue}%` }}
-                  />
+                  <span className="course-detail__progress-fill" style={{ width: `${progressValue}%` }} />
                 </div>
               </div>
 
@@ -759,50 +714,60 @@ function CourseDetailPage() {
                   onClick={handleCompleteCourse}
                   type="button"
                 >
-                  {isSubmitting ? 'Updating...' : 'Complete Course'}{' '}
-                  <span className="course-detail__complete-check" aria-hidden="true">
-                    ✓
-                  </span>
+                  {isSubmitting ? 'Updating...' : 'Complete Course'}
                 </button>
               ) : (
-                <button
-                  className="course-detail__complete-button"
-                  onClick={handleRetakeCourse}
-                  type="button"
-                >
-                  Retake Course{' '}
-                  <span className="course-detail__retake-icon" aria-hidden="true">
-                    ↻
-                  </span>
-                </button>
+                <div className="course-detail__completed-box">
+                  <p className="course-detail__completed-badge">Completed ✓</p>
+                  <p className="course-detail__panel-note">Course Completed! Congrats!</p>
+                  <button className="course-detail__ghost-button" onClick={handleRetakeCourse} type="button">
+                    Retake Course
+                  </button>
+                </div>
               )}
 
-              {progressValue >= 100 && !course?.isRated && isRatingCardOpen ? (
-                <div className="course-detail__rating-card">
-                  <button
-                    className="course-detail__rating-card-close"
-                    onClick={() => setIsRatingCardOpen(false)}
-                    type="button"
-                    aria-label="Close rating"
-                  >
-                    ×
-                  </button>
-                  <div className="course-detail__rating-card-title">Rate your experience</div>
-                  <div className="course-detail__rating-actions">
-                    {[1, 2, 3, 4, 5].map((value) => (
+              {progressValue >= 100 ? (
+                <div className="course-detail__rating-box">
+                  <h3 className="course-detail__panel-subtitle">Rate this course</h3>
+                  {course?.isRated ? (
+                    <p className="course-detail__panel-note">You've already rated this course.</p>
+                  ) : isRatingCardOpen ? (
+                    <div className="course-detail__rating-card">
                       <button
-                        className={`course-detail__star ${
-                          ratingValue >= value ? 'course-detail__star--active' : ''
-                        }`}
-                        key={value}
-                        onClick={() => handleRateCourse(value)}
+                        className="course-detail__rating-card-close"
+                        onClick={() => setIsRatingCardOpen(false)}
                         type="button"
-                        disabled={isSubmitting}
                       >
-                        ★
+                        ×
                       </button>
-                    ))}
-                  </div>
+                      <div className="course-detail__rating-card-title">Share your thoughts</div>
+                      <div className="course-detail__rating-actions">
+                        {[1, 2, 3, 4, 5].map((value) => (
+                          <button
+                            className={`course-detail__star ${
+                              ratingValue >= value ? 'course-detail__star--active' : ''
+                            }`}
+                            key={value}
+                            onClick={() => {
+                              setRatingValue(value)
+                              handleRateCourse(value)
+                            }}
+                            type="button"
+                          >
+                            ★
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      className="course-detail__ghost-button"
+                      onClick={() => setIsRatingCardOpen(true)}
+                      type="button"
+                    >
+                      Open Rating
+                    </button>
+                  )}
                 </div>
               ) : null}
             </article>
@@ -821,28 +786,17 @@ function CourseDetailPage() {
           <div className="course-detail__conflict-modal">
             <h2 className="course-detail__panel-title">Schedule conflict detected</h2>
             {conflictData.conflicts.map((conflict) => (
-              <p
-                className="course-detail__conflict-text"
-                key={conflict.conflictingEnrollmentId}
-              >
+              <p className="course-detail__conflict-text" key={conflict.conflictingEnrollmentId}>
                 You are already enrolled in {conflict.conflictingCourseName} with the same
                 schedule: {conflict.schedule}
               </p>
             ))}
             <p className="course-detail__panel-note">Are you sure you want to continue?</p>
             <div className="course-detail__conflict-actions">
-              <button
-                className="course-detail__ghost-button"
-                onClick={closeConflictModal}
-                type="button"
-              >
+              <button className="course-detail__ghost-button" onClick={closeConflictModal} type="button">
                 Cancel
               </button>
-              <button
-                className="course-detail__primary-button"
-                onClick={() => handleEnroll(true)}
-                type="button"
-              >
+              <button className="course-detail__primary-button" onClick={() => handleEnroll(true)} type="button">
                 Continue Anyway
               </button>
             </div>

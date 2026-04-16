@@ -1,42 +1,168 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAppContext } from '../AppContext'
 import { updateProfile } from '../api/profile.api'
 import ModalShell from './ModalShell'
 
+function getInitialValues(user) {
+  return {
+    fullName: user?.fullName ?? user?.full_name ?? '',
+    mobileNumber: formatMobileNumber(user?.mobileNumber ?? user?.mobile_number ?? ''),
+    age: user?.age ? String(user.age) : '',
+    avatar: null,
+  }
+}
+
+function normalizeMobileNumber(value) {
+  return value.replace(/\D/g, '')
+}
+
+function formatMobileNumber(value) {
+  const digits = normalizeMobileNumber(value).slice(0, 9)
+
+  if (digits.length <= 3) return digits
+  if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`
+  return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
+}
+
+function validateFullName(value) {
+  const trimmed = value.trim()
+
+  if (!trimmed) return 'Name is required'
+  if (trimmed.length < 3) return 'Name must be at least 3 characters'
+  if (trimmed.length > 50) return 'Name must not exceed 50 characters'
+  return ''
+}
+
+function validateMobileNumber(value) {
+  const digits = normalizeMobileNumber(value)
+
+  if (!digits) return 'Mobile number is required'
+  if (!/^\d+$/.test(digits)) {
+    return 'Please enter a valid Georgian mobile number (9 digits starting with 5)'
+  }
+  if (!digits.startsWith('5')) return 'Georgian mobile numbers must start with 5'
+  if (digits.length !== 9) return 'Mobile number must be exactly 9 digits'
+  return ''
+}
+
+function validateAge(value) {
+  if (value === '') return 'Age is required'
+  if (!/^\d+$/.test(value)) return 'Age must be a number'
+
+  const numericAge = Number(value)
+
+  if (numericAge < 16) return 'You must be at least 16 years old to enroll'
+  if (numericAge > 120) return 'Please enter a valid age'
+  return ''
+}
+
+function getFieldError(name, value) {
+  if (name === 'fullName') return validateFullName(value)
+  if (name === 'mobileNumber') return validateMobileNumber(value)
+  if (name === 'age') return validateAge(value)
+  return ''
+}
+
 function ProfileModal({ isOpen, onClose, onSuccess }) {
   const { authUser, onLogout } = useAppContext()
-  const [formValues, setFormValues] = useState({
-    fullName: '',
-    mobileNumber: '',
-    age: '',
-    avatar: null,
-  })
+  const [formValues, setFormValues] = useState(getInitialValues(authUser))
+  const [touchedFields, setTouchedFields] = useState({})
   const [errorMessage, setErrorMessage] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false)
+
+  const initialValues = useMemo(() => getInitialValues(authUser), [authUser])
+
+  const fieldErrors = useMemo(
+    () => ({
+      fullName: getFieldError('fullName', formValues.fullName),
+      mobileNumber: getFieldError('mobileNumber', formValues.mobileNumber),
+      age: getFieldError('age', formValues.age),
+    }),
+    [formValues],
+  )
+
+  const isFormValid = useMemo(
+    () => Object.values(fieldErrors).every((error) => !error),
+    [fieldErrors],
+  )
+
+  const isProfileComplete = useMemo(
+    () =>
+      Boolean(formValues.fullName.trim()) &&
+      Boolean(normalizeMobileNumber(formValues.mobileNumber)) &&
+      Boolean(formValues.age) &&
+      isFormValid,
+    [formValues, isFormValid],
+  )
+
+  const isDirty = useMemo(
+    () =>
+      formValues.fullName !== initialValues.fullName ||
+      normalizeMobileNumber(formValues.mobileNumber) !==
+        normalizeMobileNumber(initialValues.mobileNumber) ||
+      formValues.age !== initialValues.age ||
+      Boolean(formValues.avatar),
+    [formValues, initialValues],
+  )
 
   useEffect(() => {
     if (!isOpen) {
       return
     }
 
-    setFormValues({
-      fullName: authUser?.fullName ?? '',
-      mobileNumber: authUser?.mobileNumber ?? '',
-      age: authUser?.age ? String(authUser.age) : '',
-      avatar: null,
-    })
+    setFormValues(initialValues)
+    setTouchedFields({})
     setErrorMessage('')
-    setSuccessMessage('')
     setIsSubmitting(false)
-  }, [authUser, isOpen])
+    setShowCloseConfirm(false)
+  }, [initialValues, isOpen])
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        requestClose()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, isDirty, isProfileComplete]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function requestClose() {
+    if (!isProfileComplete || isDirty) {
+      setShowCloseConfirm(true)
+      return
+    }
+
+    setShowCloseConfirm(false)
+    onClose?.()
+  }
 
   function handleInputChange(event) {
     const { name, value } = event.target
 
     setFormValues((currentValues) => ({
       ...currentValues,
-      [name]: value,
+      [name]: name === 'mobileNumber' ? formatMobileNumber(value) : value,
+    }))
+
+    if (showCloseConfirm) {
+      setShowCloseConfirm(false)
+    }
+  }
+
+  function handleBlur(event) {
+    const { name } = event.target
+
+    setTouchedFields((currentFields) => ({
+      ...currentFields,
+      [name]: true,
     }))
   }
 
@@ -51,15 +177,26 @@ function ProfileModal({ isOpen, onClose, onSuccess }) {
 
   async function handleSubmit(event) {
     event.preventDefault()
+
+    setTouchedFields({
+      fullName: true,
+      mobileNumber: true,
+      age: true,
+    })
     setErrorMessage('')
-    setSuccessMessage('')
+    setShowCloseConfirm(false)
+
+    if (!isFormValid) {
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
       const formData = new FormData()
 
-      formData.append('full_name', formValues.fullName)
-      formData.append('mobile_number', formValues.mobileNumber.replace(/\D/g, ''))
+      formData.append('full_name', formValues.fullName.trim())
+      formData.append('mobile_number', normalizeMobileNumber(formValues.mobileNumber))
       formData.append('age', formValues.age)
 
       if (formValues.avatar) {
@@ -70,7 +207,7 @@ function ProfileModal({ isOpen, onClose, onSuccess }) {
       const nextUser = response?.data ?? null
 
       onSuccess?.(nextUser)
-      setSuccessMessage('Profile updated successfully.')
+      onClose?.()
     } catch (error) {
       const firstValidationError = error?.data?.errors
         ? Object.values(error.data.errors)[0]?.[0]
@@ -87,10 +224,21 @@ function ProfileModal({ isOpen, onClose, onSuccess }) {
     }
   }
 
+  function getInputStateClass(name) {
+    if (!touchedFields[name]) return ''
+    if (fieldErrors[name]) return 'auth-modal__input--invalid'
+    return 'auth-modal__input--valid'
+  }
+
+  function getFieldMessage(name) {
+    if (!touchedFields[name]) return ''
+    return fieldErrors[name]
+  }
+
   return (
-    <ModalShell isOpen={isOpen} onClose={onClose} panelClassName="profile-modal">
-      <button className="modal-shell__close" onClick={onClose} type="button">
-        x
+    <ModalShell isOpen={isOpen} onClose={requestClose} panelClassName="profile-modal">
+      <button className="modal-shell__close" onClick={requestClose} type="button">
+        ×
       </button>
 
       <div className="profile-modal__header">
@@ -105,8 +253,12 @@ function ProfileModal({ isOpen, onClose, onSuccess }) {
         )}
         <div>
           <p className="profile-modal__name">{authUser?.username ?? 'Username'}</p>
-          <p className="profile-modal__status">
-            {authUser?.profileComplete ? 'Profile is Complete' : 'Profile needs updates'}
+          <p
+            className={`profile-modal__status ${
+              isProfileComplete ? 'profile-modal__status--complete' : 'profile-modal__status--incomplete'
+            }`}
+          >
+            {isProfileComplete ? 'Profile Complete ✓' : 'Incomplete Profile'}
           </p>
         </div>
       </div>
@@ -116,33 +268,22 @@ function ProfileModal({ isOpen, onClose, onSuccess }) {
           <span className="auth-modal__label">Full Name</span>
           <span className="auth-modal__input-wrap">
             <input
-              className="auth-modal__input auth-modal__input--with-icon"
+              className={`auth-modal__input auth-modal__input--with-icon ${getInputStateClass('fullName')}`.trim()}
               id="profile-name"
               name="fullName"
+              onBlur={handleBlur}
               onChange={handleInputChange}
               placeholder="Full name"
               type="text"
               value={formValues.fullName}
             />
             <span aria-hidden="true" className="auth-modal__input-icon">
-              <svg fill="none" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M11.9 3.6L14.4 6.1"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.2"
-                />
-                <path
-                  d="M3.75 14.25L6.54 13.69L13.72 6.52C14.1 6.13 14.1 5.5 13.72 5.12L12.88 4.28C12.5 3.9 11.87 3.9 11.48 4.28L4.31 11.46L3.75 14.25Z"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.2"
-                />
-              </svg>
+              {touchedFields.fullName && !fieldErrors.fullName ? '✓' : ''}
             </span>
           </span>
+          {getFieldMessage('fullName') ? (
+            <span className="auth-modal__error">{getFieldMessage('fullName')}</span>
+          ) : null}
         </label>
 
         <label className="auth-modal__field" htmlFor="profile-email">
@@ -150,23 +291,14 @@ function ProfileModal({ isOpen, onClose, onSuccess }) {
           <span className="auth-modal__input-wrap">
             <input
               className="auth-modal__input auth-modal__input--with-icon auth-modal__input--disabled"
-              id="profile-email"
               disabled
-              placeholder="Email@gmail.com"
+              id="profile-email"
+              readOnly
               type="email"
               value={authUser?.email ?? ''}
-              readOnly
             />
-            <span aria-hidden="true" className="auth-modal__input-icon">
-              <svg fill="none" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M5.5 9L8 11.5L12.5 7"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.2"
-                />
-              </svg>
+            <span aria-hidden="true" className="auth-modal__input-icon auth-modal__input-icon--valid">
+              ✓
             </span>
           </span>
         </label>
@@ -176,52 +308,45 @@ function ProfileModal({ isOpen, onClose, onSuccess }) {
             <span className="auth-modal__label">Mobile Number</span>
             <span className="auth-modal__input-wrap">
               <input
-                className="auth-modal__input auth-modal__input--with-icon"
+                className={`auth-modal__input auth-modal__input--with-icon ${getInputStateClass('mobileNumber')}`.trim()}
                 id="profile-mobile"
                 name="mobileNumber"
+                onBlur={handleBlur}
                 onChange={handleInputChange}
-                placeholder="+995 599209820"
+                placeholder="555 123 456"
                 type="text"
                 value={formValues.mobileNumber}
               />
               <span aria-hidden="true" className="auth-modal__input-icon">
-                <svg fill="none" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M5.5 9L8 11.5L12.5 7"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.2"
-                  />
-                </svg>
+                {touchedFields.mobileNumber && !fieldErrors.mobileNumber ? '✓' : ''}
               </span>
             </span>
+            {getFieldMessage('mobileNumber') ? (
+              <span className="auth-modal__error">{getFieldMessage('mobileNumber')}</span>
+            ) : null}
           </label>
 
           <label className="auth-modal__field profile-modal__field--age" htmlFor="profile-age">
             <span className="auth-modal__label">Age</span>
             <span className="auth-modal__input-wrap">
               <input
-                className="auth-modal__input auth-modal__input--with-icon"
+                className={`auth-modal__input auth-modal__input--with-icon ${getInputStateClass('age')}`.trim()}
                 id="profile-age"
+                inputMode="numeric"
                 name="age"
+                onBlur={handleBlur}
                 onChange={handleInputChange}
-                placeholder="29"
+                placeholder="18"
                 type="text"
                 value={formValues.age}
               />
               <span aria-hidden="true" className="auth-modal__input-icon">
-                <svg fill="none" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M5 7L9 11L13 7"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.2"
-                  />
-                </svg>
+                {touchedFields.age && !fieldErrors.age ? '✓' : ''}
               </span>
             </span>
+            {getFieldMessage('age') ? (
+              <span className="auth-modal__error">{getFieldMessage('age')}</span>
+            ) : null}
           </label>
         </div>
 
@@ -267,12 +392,36 @@ function ProfileModal({ isOpen, onClose, onSuccess }) {
             />
           </div>
         </div>
+
         {errorMessage ? <p className="auth-modal__error">{errorMessage}</p> : null}
-        {successMessage ? <p className="auth-modal__success">{successMessage}</p> : null}
+
+        {showCloseConfirm ? (
+          <div className="profile-modal__confirm">
+            <p className="profile-modal__confirm-text">
+              Your profile is incomplete. You won't be able to enroll in courses until you
+              complete it. Close anyway?
+            </p>
+            <div className="profile-modal__confirm-actions">
+              <button
+                className="profile-modal__logout"
+                onClick={() => setShowCloseConfirm(false)}
+                type="button"
+              >
+                Keep Editing
+              </button>
+              <button className="auth-modal__submit" onClick={onClose} type="button">
+                Close Anyway
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         <div className="profile-modal__actions">
-          <button className="auth-modal__submit" disabled={isSubmitting} type="submit">
-            {isSubmitting ? 'Updating Profile...' : 'Update Profile'}
+          <button className="auth-modal__submit" disabled={!isFormValid || isSubmitting} type="submit">
+            {isSubmitting ? 'Saving Profile...' : 'Save Profile'}
+          </button>
+          <button className="profile-modal__logout" onClick={requestClose} type="button">
+            Close
           </button>
           <button className="profile-modal__logout" onClick={onLogout} type="button">
             Log Out

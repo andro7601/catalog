@@ -241,8 +241,24 @@ img {
   bottom: -2px;
   width: 10px;
   height: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 2px solid var(--color-surface);
   border-radius: 999px;
+  background: #ffc700;
+  color: #ffffff;
+  font-size: 7px;
+  font-weight: 700;
+}
+
+.site-header__profile-status--complete {
+  width: 14px;
+  height: 14px;
+  background: #16a34a;
+}
+
+.site-header__profile-status--incomplete {
   background: #ffc700;
 }
 
@@ -1426,6 +1442,15 @@ img {
   background: #f9fafc;
 }
 
+.auth-modal__input--invalid {
+  border-color: #dc2626;
+  background: #fff7f7;
+}
+
+.auth-modal__input--valid {
+  border-color: #16a34a;
+}
+
 .auth-modal__input-icon {
   position: absolute;
   top: 50%;
@@ -1437,6 +1462,15 @@ img {
   justify-content: center;
   transform: translateY(-50%);
   color: #c2c7d3;
+}
+
+.auth-modal__input--valid + .auth-modal__input-icon,
+.auth-modal__input-icon--valid {
+  color: #16a34a;
+}
+
+.auth-modal__input--invalid + .auth-modal__input-icon {
+  color: #dc2626;
 }
 
 .auth-modal__input-icon svg {
@@ -1616,7 +1650,14 @@ img {
 
 .profile-modal__status {
   font-size: 9px;
-  color: #6ac869;
+}
+
+.profile-modal__status--complete {
+  color: #16a34a;
+}
+
+.profile-modal__status--incomplete {
+  color: #f59e0b;
 }
 
 .profile-modal__row {
@@ -1628,6 +1669,26 @@ img {
 .profile-modal__actions {
   display: grid;
   gap: 10px;
+}
+
+.profile-modal__confirm {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #f5d48d;
+  border-radius: 10px;
+  background: #fffaf0;
+}
+
+.profile-modal__confirm-text {
+  color: #7c5b13;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.profile-modal__confirm-actions {
+  display: grid;
+  gap: 8px;
 }
 
 .profile-modal__logout {
@@ -1710,9 +1771,10 @@ img {
 }
 
 .sidebar-shell__summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
 .sidebar-shell__summary-label {
@@ -1724,6 +1786,15 @@ img {
   font-size: 18px;
   font-weight: 700;
   color: #252733;
+}
+
+.sidebar-shell__summary-card {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid #eceef5;
+  border-radius: 12px;
+  background: #fafbff;
 }
 
 .dashboard-page {
@@ -3070,6 +3141,144 @@ img {
   font-size: 12px;
   font-weight: 700;
   color: #7f8493;
+}
+
+.course-detail__picker-group {
+  display: grid;
+  gap: 12px;
+}
+
+.course-detail__picker-label {
+  color: #7a5af8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.course-detail__weeks-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.course-detail__week-card {
+  min-height: 58px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #202431;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.course-detail__week-card--active {
+  border-color: #b8b2ff;
+  background: #dbd7ff;
+  color: #4f46e5;
+}
+
+.course-detail__time-slots-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.course-detail__time-slot-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #202431;
+  cursor: pointer;
+}
+
+.course-detail__time-slot-card--active {
+  border-color: #a79cff;
+  background: #dbd7ff;
+  color: #4f46e5;
+}
+
+.course-detail__time-slot-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.course-detail__time-slot-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.course-detail__time-slot-copy {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.course-detail__time-slot-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.course-detail__time-slot-range {
+  font-size: 11px;
+  color: #8b90a0;
+}
+
+.course-detail__session-grid--cards {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.course-detail__session-card {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+}
+
+.course-detail__session-card--disabled {
+  opacity: 0.45;
+}
+
+.course-detail__session-card-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.course-detail__session-card-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.course-detail__session-card-body {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+}
+
+.course-detail__session-card-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.course-detail__session-price {
+  color: #635bff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.course-detail__session-availability {
+  color: #6f7585;
+  font-size: 12px;
 }
 
 .course-detail__complete-button {

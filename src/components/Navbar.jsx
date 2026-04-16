@@ -52,13 +52,10 @@ function Navbar({ onOpenEnrolled, onOpenLogin, onOpenProfile, onOpenSignup }) {
                   </span>
                 </NavLink>
 
-                <NavLink
-                  className={({ isActive }) =>
-                    isActive
-                      ? 'site-button site-button--header-link site-link--active'
-                      : 'site-button site-button--header-link'
-                  }
-                  to="/enrolled"
+                <button
+                  className="site-button site-button--header-link"
+                  onClick={onOpenEnrolled}
+                  type="button"
                 >
                   <span className="site-link__content">
                     <span aria-hidden="true" className="site-link__icon">
@@ -84,7 +81,7 @@ function Navbar({ onOpenEnrolled, onOpenLogin, onOpenProfile, onOpenSignup }) {
                     </span>
                     <span>Enrolled Courses</span>
                   </span>
-                </NavLink>
+                </button>
               </>
             ) : (
               <NavLink
@@ -134,7 +131,15 @@ function Navbar({ onOpenEnrolled, onOpenLogin, onOpenProfile, onOpenSignup }) {
                     src={authUser.avatar}
                   />
                 ) : null}
-                <span className="site-header__profile-status" />
+                <span
+                  className={`site-header__profile-status ${
+                    authUser?.profileComplete
+                      ? 'site-header__profile-status--complete'
+                      : 'site-header__profile-status--incomplete'
+                  }`}
+                >
+                  {authUser?.profileComplete ? '✓' : ''}
+                </span>
               </button>
             </div>
           ) : (

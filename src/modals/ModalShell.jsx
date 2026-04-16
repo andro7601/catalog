@@ -1,6 +1,6 @@
 import Backdrop from './Backdrop'
 
-function ModalShell({ children, isOpen, onClose }) {
+function ModalShell({ children, isOpen, onClose, panelClassName = '' }) {
   if (!isOpen) {
     return null
   }
@@ -10,7 +10,7 @@ function ModalShell({ children, isOpen, onClose }) {
       <Backdrop onClose={onClose} />
       <div
         aria-modal="true"
-        className="modal-shell__panel"
+        className={`modal-shell__panel ${panelClassName}`.trim()}
         onClick={(event) => event.stopPropagation()}
         role="dialog"
       >
