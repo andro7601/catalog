@@ -407,6 +407,9 @@ img {
 }
 
 .browse-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   min-height: 28px;
   border: 1px solid #e7e9f1;
   border-radius: 999px;
@@ -415,6 +418,13 @@ img {
   color: #6f7585;
   font-size: 12px;
   cursor: pointer;
+}
+
+.browse-chip__input,
+.browse-instructor__input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .browse-chip--active {
@@ -429,6 +439,7 @@ img {
 }
 
 .browse-instructor {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -495,6 +506,17 @@ img {
   cursor: pointer;
 }
 
+.browse-sort-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.browse-sort-wrap__label {
+  color: #8c92a2;
+  font-size: 12px;
+}
+
 .browse-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -502,10 +524,21 @@ img {
 }
 
 .browse-card {
+  display: block;
   padding: 14px 14px 16px;
   border: 1px solid #eceef5;
   border-radius: 16px;
   background: #ffffff;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.browse-card:hover {
+  transform: translateY(-2px);
+  border-color: #ddd9ff;
+  box-shadow: 0 16px 36px rgba(77, 70, 229, 0.08);
 }
 
 .browse-card__image {
@@ -513,6 +546,9 @@ img {
   margin-bottom: 12px;
   border-radius: 10px;
   background: linear-gradient(135deg, #1a1f2f 0%, #31384b 45%, #222736 100%);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 .browse-card__meta {
@@ -569,6 +605,9 @@ img {
 }
 
 .browse-card__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 40px;
   border: 0;
   border-radius: 10px;
@@ -578,6 +617,35 @@ img {
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+}
+
+.browse-card--loading {
+  pointer-events: none;
+}
+
+.browse-card__skeleton {
+  border-radius: 8px;
+  background: linear-gradient(90deg, #eef1f7 0%, #f7f8fc 50%, #eef1f7 100%);
+}
+
+.browse-card__skeleton--meta {
+  height: 12px;
+  margin-bottom: 12px;
+}
+
+.browse-card__skeleton--title {
+  height: 54px;
+  margin-bottom: 12px;
+}
+
+.browse-card__skeleton--tag {
+  width: 92px;
+  height: 24px;
+  margin-bottom: 20px;
+}
+
+.browse-card__skeleton--bottom {
+  height: 44px;
 }
 
 .browse-pagination {
@@ -602,6 +670,24 @@ img {
   border-color: var(--color-brand);
   background: var(--color-brand);
   color: #ffffff;
+}
+
+.browse-pagination__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.browse-results__message {
+  margin-bottom: 18px;
+  color: #7f8493;
+  font-size: 13px;
+}
+
+.browse-instructor__avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
 }
 
 .page-card {
