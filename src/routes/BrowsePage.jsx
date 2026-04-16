@@ -48,6 +48,11 @@ function BrowsePage() {
   const activeFilterCount =
     selectedCategories.length + selectedTopics.length + selectedInstructors.length
 
+  const breadcrumbCategoryName =
+    selectedCategories.length === 1
+      ? categories.find((category) => String(category.id) === String(selectedCategories[0]))?.name
+      : null
+
   useEffect(() => {
     let isMounted = true
 
@@ -205,11 +210,27 @@ function BrowsePage() {
 
   return (
     <section className="browse-page">
+      <div className="browse-breadcrumb" aria-label="Breadcrumb">
+        <span>Home</span>
+        <span className="browse-breadcrumb__sep" aria-hidden="true">
+          ›
+        </span>
+        <span>Browse</span>
+        {breadcrumbCategoryName ? (
+          <>
+            <span className="browse-breadcrumb__sep" aria-hidden="true">
+              ›
+            </span>
+            <span className="browse-breadcrumb__current">{breadcrumbCategoryName}</span>
+          </>
+        ) : null}
+      </div>
+
       <aside className="browse-filters">
         <div className="browse-filters__top">
           <h1 className="browse-filters__title">Filters</h1>
           <button className="browse-filters__clear" onClick={clearAllFilters} type="button">
-            Clear All Filters
+            Clear All Filters <span className="browse-filters__clear-x" aria-hidden="true">×</span>
           </button>
         </div>
 
@@ -301,7 +322,7 @@ function BrowsePage() {
             {isLoadingCourses
               ? 'Loading courses...'
               : totalCourses > 0
-                ? `Showing ${courses.length} courses`
+                ? `Showing ${courses.length} out of ${totalCourses}`
                 : 'No courses found'}
           </p>
 
