@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAppContext } from '../AppContext'
+import courseCardReference from '../assets/course-card-reference.jpg'
 import { getEnrollments } from '../api/enrollments.api'
 import Backdrop from './Backdrop'
 
@@ -10,7 +11,7 @@ function getCourseEntity(item) {
 
 function getCourseImage(item) {
   const course = getCourseEntity(item)
-  return course?.image || course?.thumbnail || course?.coverImage || ''
+  return course?.image || course?.thumbnail || course?.coverImage || courseCardReference
 }
 
 function getInstructorName(item) {

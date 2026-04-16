@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAppContext } from '../AppContext'
 import { getFeaturedCourses, getInProgressCourses } from '../api/courses.api'
+import courseCardReference from '../assets/course-card-reference.jpg'
 import dashboardLock from '../assets/dashboard-lock.svg'
+import heroSlideCommunity from '../assets/hero-slide-community.png'
+import heroSlideDefault from '../assets/hero-slide-default.png'
+import heroSlideProgress from '../assets/hero-slide-progress.png'
 
 function formatPrice(price) {
   if (typeof price !== 'number' || Number.isNaN(price)) {
@@ -18,7 +22,7 @@ function getCourseEntity(item) {
 
 function getCourseImage(item) {
   const course = getCourseEntity(item)
-  return course?.image || course?.thumbnail || course?.coverImage || ''
+  return course?.image || course?.thumbnail || course?.coverImage || courseCardReference
 }
 
 function getCourseDescription(item) {
@@ -187,6 +191,7 @@ function DashboardPage() {
       buttonLabel: 'Browse Courses',
       buttonHref: '/browse',
       variant: 'default',
+      image: heroSlideDefault,
     },
     {
       title: 'Learn together, grow faster',
@@ -194,6 +199,7 @@ function DashboardPage() {
       buttonLabel: 'Learn More',
       buttonHref: '/browse',
       variant: 'community',
+      image: heroSlideCommunity,
     },
     {
       title: 'Pick up where you left off',
@@ -202,6 +208,7 @@ function DashboardPage() {
       buttonLabel: 'Start Learning',
       buttonHref: '/browse',
       variant: 'progress',
+      image: heroSlideProgress,
     },
   ]
   const [featuredCourses, setFeaturedCourses] = useState([])
@@ -210,6 +217,13 @@ function DashboardPage() {
   const [isLoadingProgress, setIsLoadingProgress] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [activeHeroSlide, setActiveHeroSlide] = useState(0)
+
+  useEffect(() => {
+    heroSlides.forEach((slide) => {
+      const image = new Image()
+      image.src = slide.image
+    })
+  }, [])
 
   useEffect(() => {
     let isMounted = true
@@ -406,9 +420,21 @@ function DashboardPage() {
 
   return (
     <div className="dashboard-page">
-      <section
-        className={`dashboard-hero dashboard-hero--${currentHeroSlide.variant}`}
-      >
+      <section className={`dashboard-hero dashboard-hero--${currentHeroSlide.variant}`}>
+        <div className="dashboard-hero__media" aria-hidden="true">
+          {heroSlides.map((slide, index) => (
+            <span
+              className={`dashboard-hero__slide ${
+                activeHeroSlide === index ? 'dashboard-hero__slide--active' : ''
+              }`}
+              key={slide.title}
+              style={{
+                backgroundImage: `linear-gradient(0deg, rgba(18, 18, 24, 0.08), rgba(18, 18, 24, 0.08)), url(${slide.image})`,
+              }}
+            />
+          ))}
+        </div>
+
         <div className="dashboard-hero__content">
           <h1 className="dashboard-hero__title">{currentHeroSlide.title}</h1>
           {currentHeroSlide.description ? (
