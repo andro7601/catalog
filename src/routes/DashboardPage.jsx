@@ -10,7 +10,7 @@ import heroSlideProgress from '../assets/hero-slide-progress.png'
 
 function formatPrice(price) {
   if (typeof price !== 'number' || Number.isNaN(price)) {
-    return '$299'
+    return 'Price unavailable'
   }
 
   return `$${Math.round(price)}`
@@ -30,13 +30,13 @@ function getCourseDescription(item) {
   return (
     course?.description ||
     course?.shortDescription ||
-    'Master modern React patterns, hooks, and TypeScript integration for building scalable web applications.'
+    'Course description will appear here once it is available.'
   )
 }
 
 function getInstructorName(item) {
   const course = getCourseEntity(item)
-  return course?.instructor?.name || course?.mentor?.name || 'Marilyn Mango'
+  return course?.instructor?.name || course?.mentor?.name || 'Unknown Instructor'
 }
 
 function getProgressValue(course) {
@@ -45,12 +45,12 @@ function getProgressValue(course) {
     course?.progressPercentage ??
     course?.progress ??
     course?.completion ??
-    65
+    0
 
   const numericValue = Number(rawValue)
 
   if (Number.isNaN(numericValue)) {
-    return 65
+    return 0
   }
 
   return Math.max(0, Math.min(100, Math.round(numericValue)))
@@ -65,7 +65,7 @@ function getCourseTitle(item) {
 }
 
 function getCourseRating(item) {
-  return getCourseEntity(item)?.avgRating ?? '4.9'
+  return getCourseEntity(item)?.avgRating ?? 'New'
 }
 
 function getCourseBasePrice(item) {

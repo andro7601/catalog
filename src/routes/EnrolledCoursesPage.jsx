@@ -15,7 +15,7 @@ function getCourseImage(item) {
 
 function getInstructorName(item) {
   const course = getCourseEntity(item)
-  return course?.instructor?.name || course?.mentor?.name || 'Sarah Johnson'
+  return course?.instructor?.name || course?.mentor?.name || 'Unknown Instructor'
 }
 
 function getProgressValue(course) {
@@ -24,23 +24,23 @@ function getProgressValue(course) {
     course?.progressPercentage ??
     course?.progress ??
     course?.completion ??
-    65
+    0
 
   const numericValue = Number(rawValue)
 
   if (Number.isNaN(numericValue)) {
-    return 65
+    return 0
   }
 
   return Math.max(0, Math.min(100, Math.round(numericValue)))
 }
 
 function getCourseTitle(item) {
-  return getCourseEntity(item)?.title ?? 'Advanced React & TypeScript Development'
+  return getCourseEntity(item)?.title ?? 'Untitled Course'
 }
 
 function getCourseRating(item) {
-  return getCourseEntity(item)?.avgRating ?? '4.9'
+  return getCourseEntity(item)?.avgRating ?? 'New'
 }
 
 function getCourseId(item) {
@@ -48,20 +48,19 @@ function getCourseId(item) {
 }
 
 function getEnrollmentPrice(item) {
-  return Number(item?.totalPrice ?? getCourseEntity(item)?.basePrice ?? 299)
+  return Number(item?.totalPrice ?? getCourseEntity(item)?.basePrice ?? 0)
 }
 
 function getEnrollmentSchedule(item) {
   const schedule = item?.schedule ?? {}
 
   return {
-    weeklyLabel: schedule?.weeklySchedule?.label ?? 'Monday-Wednesday',
-    timeLabel: schedule?.timeSlot?.label ?? 'Evening 6:00 PM - 8:00 PM',
+    weeklyLabel: schedule?.weeklySchedule?.label ?? 'Schedule unavailable',
+    timeLabel: schedule?.timeSlot?.label ?? 'Time unavailable',
     sessionLabel: schedule?.sessionType?.name
       ? schedule.sessionType.name.replace('_', ' ')
-      : 'In Person',
-    location:
-      schedule?.location || schedule?.sessionType?.location || 'Tbilisi, Chavchavadze St.30',
+      : 'Session unavailable',
+    location: schedule?.location || schedule?.sessionType?.location || '',
   }
 }
 

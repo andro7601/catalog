@@ -16,7 +16,7 @@ function getCourseImage(item) {
 
 function getInstructorName(item) {
   const course = getCourseEntity(item)
-  return course?.instructor?.name || course?.mentor?.name || 'Sarah Johnson'
+  return course?.instructor?.name || course?.mentor?.name || 'Unknown Instructor'
 }
 
 function getProgressValue(course) {
@@ -25,23 +25,23 @@ function getProgressValue(course) {
     course?.progressPercentage ??
     course?.progress ??
     course?.completion ??
-    65
+    0
 
   const numericValue = Number(rawValue)
 
   if (Number.isNaN(numericValue)) {
-    return 65
+    return 0
   }
 
   return Math.max(0, Math.min(100, Math.round(numericValue)))
 }
 
 function getCourseTitle(item) {
-  return getCourseEntity(item)?.title ?? 'Advanced React & TypeScript Development'
+  return getCourseEntity(item)?.title ?? 'Untitled Course'
 }
 
 function getCourseRating(item) {
-  return getCourseEntity(item)?.avgRating ?? '4.9'
+  return getCourseEntity(item)?.avgRating ?? 'New'
 }
 
 function getCourseId(item) {
@@ -49,20 +49,19 @@ function getCourseId(item) {
 }
 
 function getEnrollmentPrice(item) {
-  return Number(item?.totalPrice ?? getCourseEntity(item)?.basePrice ?? 299)
+  return Number(item?.totalPrice ?? getCourseEntity(item)?.basePrice ?? 0)
 }
 
 function getEnrollmentSchedule(item) {
   const schedule = item?.schedule ?? {}
 
   return {
-    weeklyLabel: schedule?.weeklySchedule?.label ?? 'Monday-Wednesday',
-    timeLabel: schedule?.timeSlot?.label ?? 'Evening 6:00 PM - 8:00 PM',
+    weeklyLabel: schedule?.weeklySchedule?.label ?? 'Schedule unavailable',
+    timeLabel: schedule?.timeSlot?.label ?? 'Time unavailable',
     sessionLabel: schedule?.sessionType?.name
       ? schedule.sessionType.name.replace('_', ' ')
-      : 'In Person',
-    location:
-      schedule?.location || schedule?.sessionType?.location || 'Tbilisi, Chavchavadze St.30',
+      : 'Session unavailable',
+    location: schedule?.location || schedule?.sessionType?.location || '',
   }
 }
 
@@ -70,16 +69,20 @@ function EnrolledCoursesSidebar({ isOpen, onClose }) {
   const { isAuthenticated } = useAppContext()
   const [courses, setCourses] = useState([])
   const [errorMessage, setErrorMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     let isMounted = true
 
     async function loadCourses() {
       if (!isOpen || !isAuthenticated) {
+        setCourses([])
+        setIsLoading(false)
         return
       }
 
       try {
+        setIsLoading(true)
         setErrorMessage('')
         const response = await getEnrollments()
 
@@ -92,6 +95,10 @@ function EnrolledCoursesSidebar({ isOpen, onClose }) {
         if (isMounted) {
           setCourses([])
           setErrorMessage('Could not load enrolled courses.')
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
         }
       }
     }
@@ -122,14 +129,45 @@ function EnrolledCoursesSidebar({ isOpen, onClose }) {
             <p className="sidebar-shell__count">Total Enrollments {courses.length}</p>
           </div>
           <button className="modal-shell__close" onClick={onClose} type="button">
-            x
+            ×
           </button>
         </div>
 
         <div className="sidebar-shell__list">
           {errorMessage ? <p className="sidebar-shell__empty-text">{errorMessage}</p> : null}
 
-          {!errorMessage && courses.length === 0 ? (
+          {isLoading ? (
+            <>
+              {Array.from({ length: 3 }, (_, index) => (
+                <article
+                  className="sidebar-shell__course sidebar-shell__course--loading"
+                  key={`sidebar-loading-${index}`}
+                >
+                  <div className="sidebar-shell__thumb" />
+
+                  <div className="sidebar-shell__course-body">
+                    <div className="sidebar-shell__course-top">
+                      <div className="sidebar-shell__skeleton sidebar-shell__skeleton--title" />
+                      <div className="sidebar-shell__skeleton sidebar-shell__skeleton--rating" />
+                    </div>
+
+                    <div className="sidebar-shell__course-meta">
+                      <div className="sidebar-shell__skeleton sidebar-shell__skeleton--meta" />
+                      <div className="sidebar-shell__skeleton sidebar-shell__skeleton--meta" />
+                      <div className="sidebar-shell__skeleton sidebar-shell__skeleton--meta" />
+                    </div>
+
+                    <div className="sidebar-shell__course-bottom">
+                      <div className="sidebar-shell__skeleton sidebar-shell__skeleton--progress" />
+                      <div className="sidebar-shell__skeleton sidebar-shell__skeleton--button" />
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </>
+          ) : null}
+
+          {!isLoading && !errorMessage && courses.length === 0 ? (
             <div className="sidebar-shell__empty">
               <p className="sidebar-shell__empty-title">Your learning journey starts here!</p>
               <p className="sidebar-shell__empty-text">Browse courses to get started.</p>
@@ -139,7 +177,8 @@ function EnrolledCoursesSidebar({ isOpen, onClose }) {
             </div>
           ) : null}
 
-          {courses.map((course) => {
+          {!isLoading &&
+            courses.map((course) => {
             const progressValue = getProgressValue(course)
             const schedule = getEnrollmentSchedule(course)
 
