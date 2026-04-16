@@ -1,16 +1,94 @@
 import { useEffect, useState } from 'react'
+import { register } from '../api/auth.api'
 import ModalShell from './ModalShell'
 
-function SignupModal({ isOpen, onClose, onSwitchToLogin }) {
+function SignupModal({ isOpen, onClose, onSuccess, onSwitchToLogin }) {
   const [step, setStep] = useState(1)
+  const [formValues, setFormValues] = useState({
+    email: '',
+    password: '',
+    password_confirmation: '',
+    username: '',
+    avatar: null,
+  })
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (!isOpen) {
       setStep(1)
+      setFormValues({
+        email: '',
+        password: '',
+        password_confirmation: '',
+        username: '',
+        avatar: null,
+      })
+      setErrorMessage('')
+      setIsSubmitting(false)
     }
   }, [isOpen])
 
   const isLastStep = step === 3
+
+  function handleInputChange(event) {
+    const { name, value } = event.target
+
+    setFormValues((currentValues) => ({
+      ...currentValues,
+      [name]: value,
+    }))
+  }
+
+  function handleFileChange(event) {
+    const file = event.target.files?.[0] ?? null
+
+    setFormValues((currentValues) => ({
+      ...currentValues,
+      avatar: file,
+    }))
+  }
+
+  async function handleSubmit() {
+    if (!isLastStep) {
+      setStep((currentStep) => Math.min(3, currentStep + 1))
+      return
+    }
+
+    setErrorMessage('')
+    setIsSubmitting(true)
+
+    try {
+      const formData = new FormData()
+
+      formData.append('username', formValues.username)
+      formData.append('email', formValues.email)
+      formData.append('password', formValues.password)
+      formData.append('password_confirmation', formValues.password_confirmation)
+
+      if (formValues.avatar) {
+        formData.append('avatar', formValues.avatar)
+      }
+
+      const response = await register(formData)
+      const authPayload = response?.data ?? {}
+
+      onSuccess?.({
+        token: authPayload.token,
+        user: authPayload.user,
+      })
+    } catch (error) {
+      const firstValidationError = error?.data?.errors
+        ? Object.values(error.data.errors)[0]?.[0]
+        : null
+
+      setErrorMessage(
+        firstValidationError || error?.data?.message || error?.message || 'Could not sign up.',
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <ModalShell isOpen={isOpen} onClose={onClose} panelClassName="auth-modal auth-modal--signup">
@@ -54,8 +132,11 @@ function SignupModal({ isOpen, onClose, onSwitchToLogin }) {
             <input
               className="auth-modal__input"
               id="signup-email"
+              name="email"
+              onChange={handleInputChange}
               placeholder="you@example.com"
               type="email"
+              value={formValues.email}
             />
           </label>
         </div>
@@ -69,8 +150,11 @@ function SignupModal({ isOpen, onClose, onSwitchToLogin }) {
               <input
                 className="auth-modal__input auth-modal__input--with-icon"
                 id="signup-password"
+                name="password"
+                onChange={handleInputChange}
                 placeholder="Password"
                 type="password"
+                value={formValues.password}
               />
               <span aria-hidden="true" className="auth-modal__input-icon">
                 <svg fill="none" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
@@ -93,8 +177,11 @@ function SignupModal({ isOpen, onClose, onSwitchToLogin }) {
               <input
                 className="auth-modal__input auth-modal__input--with-icon"
                 id="signup-confirm-password"
+                name="password_confirmation"
+                onChange={handleInputChange}
                 placeholder="........"
                 type="password"
+                value={formValues.password_confirmation}
               />
               <span aria-hidden="true" className="auth-modal__input-icon">
                 <svg fill="none" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
@@ -126,8 +213,11 @@ function SignupModal({ isOpen, onClose, onSwitchToLogin }) {
             <input
               className="auth-modal__input"
               id="signup-username"
+              name="username"
+              onChange={handleInputChange}
               placeholder="Username"
               type="text"
+              value={formValues.username}
             />
           </label>
 
@@ -160,27 +250,31 @@ function SignupModal({ isOpen, onClose, onSwitchToLogin }) {
                 </svg>
               </span>
               <p className="upload-box__text">
-                Drag and drop or{' '}
-                <button className="auth-modal__switch-link" type="button">
-                  Upload file
-                </button>
+                Drag and drop or <span className="auth-modal__switch-link">Upload file</span>
               </p>
-              <p className="upload-box__hint">JPG, PNG or WebP</p>
+              <p className="upload-box__hint">
+                {formValues.avatar ? formValues.avatar.name : 'JPG, PNG or WebP'}
+              </p>
+              <input
+                accept=".jpg,.jpeg,.png,.webp"
+                className="upload-box__input"
+                onChange={handleFileChange}
+                type="file"
+              />
             </div>
           </div>
         </div>
       ) : null}
 
+      {errorMessage ? <p className="auth-modal__error">{errorMessage}</p> : null}
+
       <button
         className="auth-modal__submit"
-        onClick={() => {
-          if (!isLastStep) {
-            setStep((currentStep) => Math.min(3, currentStep + 1))
-          }
-        }}
+        disabled={isSubmitting}
+        onClick={handleSubmit}
         type="button"
       >
-        {isLastStep ? 'Sign Up' : 'Next'}
+        {isLastStep ? (isSubmitting ? 'Creating Account...' : 'Sign Up') : 'Next'}
       </button>
 
       <div className="auth-modal__divider">

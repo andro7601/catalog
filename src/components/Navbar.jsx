@@ -1,8 +1,9 @@
 import { NavLink } from 'react-router-dom'
+import { useAppContext } from '../AppContext'
 import rocketLogo from '../assets/rocket-logo.png'
 
-function Navbar({ onOpenEnrolled, onOpenLogin, onOpenSignup }) {
-  const isAuthenticated = false
+function Navbar({ onOpenEnrolled, onOpenLogin, onOpenProfile, onOpenSignup }) {
+  const { authUser, isAuthenticated } = useAppContext()
 
   return (
     <header className="site-header">
@@ -121,8 +122,15 @@ function Navbar({ onOpenEnrolled, onOpenLogin, onOpenSignup }) {
 
           {isAuthenticated ? (
             <div className="site-header__actions">
-              <button className="site-header__profile" type="button">
+              <button className="site-header__profile" onClick={onOpenProfile} type="button">
                 <span className="site-header__profile-ring" />
+                {authUser?.avatar ? (
+                  <img
+                    alt=""
+                    className="site-header__profile-avatar"
+                    src={authUser.avatar}
+                  />
+                ) : null}
               </button>
             </div>
           ) : (

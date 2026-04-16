@@ -1,6 +1,92 @@
+import { useEffect, useState } from 'react'
+import { useAppContext } from '../AppContext'
+import { updateProfile } from '../api/profile.api'
 import ModalShell from './ModalShell'
 
-function ProfileModal({ isOpen, onClose }) {
+function ProfileModal({ isOpen, onClose, onSuccess }) {
+  const { authUser, onLogout } = useAppContext()
+  const [formValues, setFormValues] = useState({
+    fullName: '',
+    mobileNumber: '',
+    age: '',
+    avatar: null,
+  })
+  const [errorMessage, setErrorMessage] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (!isOpen) {
+      return
+    }
+
+    setFormValues({
+      fullName: authUser?.fullName ?? '',
+      mobileNumber: authUser?.mobileNumber ?? '',
+      age: authUser?.age ? String(authUser.age) : '',
+      avatar: null,
+    })
+    setErrorMessage('')
+    setSuccessMessage('')
+    setIsSubmitting(false)
+  }, [authUser, isOpen])
+
+  function handleInputChange(event) {
+    const { name, value } = event.target
+
+    setFormValues((currentValues) => ({
+      ...currentValues,
+      [name]: value,
+    }))
+  }
+
+  function handleFileChange(event) {
+    const file = event.target.files?.[0] ?? null
+
+    setFormValues((currentValues) => ({
+      ...currentValues,
+      avatar: file,
+    }))
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    setErrorMessage('')
+    setSuccessMessage('')
+    setIsSubmitting(true)
+
+    try {
+      const formData = new FormData()
+
+      formData.append('full_name', formValues.fullName)
+      formData.append('mobile_number', formValues.mobileNumber.replace(/\D/g, ''))
+      formData.append('age', formValues.age)
+
+      if (formValues.avatar) {
+        formData.append('avatar', formValues.avatar)
+      }
+
+      const response = await updateProfile(formData)
+      const nextUser = response?.data ?? null
+
+      onSuccess?.(nextUser)
+      setSuccessMessage('Profile updated successfully.')
+    } catch (error) {
+      const firstValidationError = error?.data?.errors
+        ? Object.values(error.data.errors)[0]?.[0]
+        : null
+
+      setErrorMessage(
+        firstValidationError ||
+          error?.data?.message ||
+          error?.message ||
+          'Could not update profile.',
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <ModalShell isOpen={isOpen} onClose={onClose} panelClassName="profile-modal">
       <button className="modal-shell__close" onClick={onClose} type="button">
@@ -12,22 +98,31 @@ function ProfileModal({ isOpen, onClose }) {
       </div>
 
       <div className="profile-modal__identity">
-        <div className="profile-modal__avatar" />
+        {authUser?.avatar ? (
+          <img alt="" className="profile-modal__avatar-image" src={authUser.avatar} />
+        ) : (
+          <div className="profile-modal__avatar" />
+        )}
         <div>
-          <p className="profile-modal__name">Username</p>
-          <p className="profile-modal__status">Profile is Complete</p>
+          <p className="profile-modal__name">{authUser?.username ?? 'Username'}</p>
+          <p className="profile-modal__status">
+            {authUser?.profileComplete ? 'Profile is Complete' : 'Profile needs updates'}
+          </p>
         </div>
       </div>
 
-      <div className="profile-modal__form">
+      <form className="profile-modal__form" onSubmit={handleSubmit}>
         <label className="auth-modal__field" htmlFor="profile-name">
           <span className="auth-modal__label">Full Name</span>
           <span className="auth-modal__input-wrap">
             <input
               className="auth-modal__input auth-modal__input--with-icon"
               id="profile-name"
-              placeholder="Username"
+              name="fullName"
+              onChange={handleInputChange}
+              placeholder="Full name"
               type="text"
+              value={formValues.fullName}
             />
             <span aria-hidden="true" className="auth-modal__input-icon">
               <svg fill="none" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
@@ -56,8 +151,11 @@ function ProfileModal({ isOpen, onClose }) {
             <input
               className="auth-modal__input auth-modal__input--with-icon auth-modal__input--disabled"
               id="profile-email"
+              disabled
               placeholder="Email@gmail.com"
               type="email"
+              value={authUser?.email ?? ''}
+              readOnly
             />
             <span aria-hidden="true" className="auth-modal__input-icon">
               <svg fill="none" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
@@ -80,8 +178,11 @@ function ProfileModal({ isOpen, onClose }) {
               <input
                 className="auth-modal__input auth-modal__input--with-icon"
                 id="profile-mobile"
+                name="mobileNumber"
+                onChange={handleInputChange}
                 placeholder="+995 599209820"
                 type="text"
+                value={formValues.mobileNumber}
               />
               <span aria-hidden="true" className="auth-modal__input-icon">
                 <svg fill="none" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
@@ -103,8 +204,11 @@ function ProfileModal({ isOpen, onClose }) {
               <input
                 className="auth-modal__input auth-modal__input--with-icon"
                 id="profile-age"
+                name="age"
+                onChange={handleInputChange}
                 placeholder="29"
                 type="text"
+                value={formValues.age}
               />
               <span aria-hidden="true" className="auth-modal__input-icon">
                 <svg fill="none" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
@@ -150,19 +254,31 @@ function ProfileModal({ isOpen, onClose }) {
               </svg>
             </span>
             <p className="upload-box__text">
-              Drag and drop or{' '}
-              <button className="auth-modal__switch-link" type="button">
-                Upload file
-              </button>
+              Drag and drop or <span className="auth-modal__switch-link">Upload file</span>
             </p>
-            <p className="upload-box__hint">JPG, PNG or WebP</p>
+            <p className="upload-box__hint">
+              {formValues.avatar ? formValues.avatar.name : 'JPG, PNG or WebP'}
+            </p>
+            <input
+              accept=".jpg,.jpeg,.png,.webp"
+              className="upload-box__input"
+              onChange={handleFileChange}
+              type="file"
+            />
           </div>
         </div>
-      </div>
+        {errorMessage ? <p className="auth-modal__error">{errorMessage}</p> : null}
+        {successMessage ? <p className="auth-modal__success">{successMessage}</p> : null}
 
-      <button className="auth-modal__submit" type="button">
-        Update Profile
-      </button>
+        <div className="profile-modal__actions">
+          <button className="auth-modal__submit" disabled={isSubmitting} type="submit">
+            {isSubmitting ? 'Updating Profile...' : 'Update Profile'}
+          </button>
+          <button className="profile-modal__logout" onClick={onLogout} type="button">
+            Log Out
+          </button>
+        </div>
+      </form>
     </ModalShell>
   )
 }

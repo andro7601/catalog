@@ -1,6 +1,55 @@
+import { useEffect, useState } from 'react'
+import { login } from '../api/auth.api'
 import ModalShell from './ModalShell'
 
-function LoginModal({ isOpen, onClose, onSwitchToSignup }) {
+function LoginModal({ isOpen, onClose, onSuccess, onSwitchToSignup }) {
+  const [formValues, setFormValues] = useState({
+    email: '',
+    password: '',
+  })
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (!isOpen) {
+      setFormValues({
+        email: '',
+        password: '',
+      })
+      setErrorMessage('')
+      setIsSubmitting(false)
+    }
+  }, [isOpen])
+
+  function handleInputChange(event) {
+    const { name, value } = event.target
+
+    setFormValues((currentValues) => ({
+      ...currentValues,
+      [name]: value,
+    }))
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    setErrorMessage('')
+    setIsSubmitting(true)
+
+    try {
+      const response = await login(formValues)
+      const authPayload = response?.data ?? {}
+
+      onSuccess?.({
+        token: authPayload.token,
+        user: authPayload.user,
+      })
+    } catch (error) {
+      setErrorMessage(error?.data?.message || error?.message || 'Could not log in.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <ModalShell isOpen={isOpen} onClose={onClose} panelClassName="auth-modal">
       <button className="modal-shell__close" onClick={onClose} type="button">
@@ -12,14 +61,17 @@ function LoginModal({ isOpen, onClose, onSwitchToSignup }) {
         <p className="auth-modal__subtitle">Log in to continue your learning</p>
       </div>
 
-      <div className="auth-modal__form">
+      <form className="auth-modal__form" onSubmit={handleSubmit}>
         <label className="auth-modal__field" htmlFor="login-email">
           <span className="auth-modal__label">Email</span>
           <input
             className="auth-modal__input"
             id="login-email"
+            name="email"
+            onChange={handleInputChange}
             placeholder="you@example.com"
             type="email"
+            value={formValues.email}
           />
         </label>
 
@@ -29,8 +81,11 @@ function LoginModal({ isOpen, onClose, onSwitchToSignup }) {
             <input
               className="auth-modal__input auth-modal__input--with-icon"
               id="login-password"
+              name="password"
+              onChange={handleInputChange}
               placeholder="........"
               type="password"
+              value={formValues.password}
             />
             <span aria-hidden="true" className="auth-modal__input-icon">
               <svg fill="none" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
@@ -46,11 +101,12 @@ function LoginModal({ isOpen, onClose, onSwitchToSignup }) {
             </span>
           </span>
         </label>
-      </div>
+        {errorMessage ? <p className="auth-modal__error">{errorMessage}</p> : null}
 
-      <button className="auth-modal__submit" type="button">
-        Log In
-      </button>
+        <button className="auth-modal__submit" disabled={isSubmitting} type="submit">
+          {isSubmitting ? 'Logging In...' : 'Log In'}
+        </button>
+      </form>
 
       <div className="auth-modal__divider">
         <span>or</span>
