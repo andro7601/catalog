@@ -1,16 +1,114 @@
-# React + Vite
+# Redberry Bootcamp XI Course Catalog
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React + Vite implementation of the Redberry Bootcamp XI assignment.
 
-Currently, two official plugins are available:
+This project is an online course platform UI with authentication, dashboard states, browse filters, course detail enrollment flow, profile completion flow, enrolled courses panel, and enrolled courses page.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Stack
 
-## React Compiler
+- React
+- Vite
+- React Router
+- Plain CSS
+- Redberry Internship API
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Features
 
-## Expanding the ESLint configuration
+- Authentication with sign up and log in modals
+- Profile modal with validation and profile completion status
+- Dashboard for guest and authenticated users
+- Featured courses section
+- Continue learning section with locked guest state
+- Browse page with:
+  - categories
+  - topics
+  - instructors
+  - sorting
+  - pagination
+- Course detail page with:
+  - weekly schedule selection
+  - time slot selection
+  - session type selection
+  - dynamic total price
+  - enrollment flow
+  - schedule conflict handling
+  - course completion
+  - rating flow
+- Enrolled courses sidebar
+- Enrolled courses page
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## API
+
+Base API used by the app:
+
+- `https://api.redclass.redberryinternship.ge/api`
+
+Main API areas used:
+
+- auth
+- profile
+- courses
+- filters
+- enrollments
+- reviews
+
+## Getting Started
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Start the development server:
+
+```bash
+npm run dev
+```
+
+3. Build for production:
+
+```bash
+npm run build
+```
+
+4. Preview the production build:
+
+```bash
+npm run preview
+```
+
+## Scripts
+
+- `npm run dev` starts the Vite dev server
+- `npm run build` creates a production build
+- `npm run preview` previews the production build locally
+- `npm run lint` runs ESLint
+
+## Project Structure
+
+```txt
+src/
+  api/
+  assets/
+  components/
+  modals/
+  routes/
+  App.jsx
+  AppContext.jsx
+  index.css
+  main.jsx
+```
+
+## Notes
+
+- The app uses a single-page React architecture.
+- Authentication is token-based.
+- Profile completion is required before enrollment.
+- Some UI states depend on API data availability.
+
+## Repository
+
+GitHub repository:
+
+- [https://github.com/andro7601/catalog](https://github.com/andro7601/catalog)
