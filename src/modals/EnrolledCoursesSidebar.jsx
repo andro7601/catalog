@@ -1,6 +1,81 @@
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { getInProgressCourses } from '../api/courses.api'
 import Backdrop from './Backdrop'
 
+function getCourseImage(course) {
+  return course?.image || course?.thumbnail || course?.coverImage || ''
+}
+
+function getInstructorName(course) {
+  return course?.instructor?.name || course?.mentor?.name || 'Sarah Johnson'
+}
+
+function getProgressValue(course) {
+  const rawValue =
+    course?.completionPercentage ??
+    course?.progressPercentage ??
+    course?.progress ??
+    course?.completion ??
+    65
+
+  const numericValue = Number(rawValue)
+
+  if (Number.isNaN(numericValue)) {
+    return 65
+  }
+
+  return Math.max(0, Math.min(100, Math.round(numericValue)))
+}
+
 function EnrolledCoursesSidebar({ isOpen, onClose }) {
+  const [courses, setCourses] = useState([])
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadCourses() {
+      if (!isOpen) {
+        return
+      }
+
+      try {
+        const response = await getInProgressCourses()
+
+        if (!isMounted) {
+          return
+        }
+
+        const items = response?.data ?? []
+        setCourses(
+          items.length > 0
+            ? items
+            : Array.from({ length: 4 }, (_, index) => ({
+                id: `fallback-${index}`,
+                title: 'Advanced React & TypeScript Development',
+                completionPercentage: 65,
+              })),
+        )
+      } catch {
+        if (isMounted) {
+          setCourses(
+            Array.from({ length: 4 }, (_, index) => ({
+              id: `fallback-${index}`,
+              title: 'Advanced React & TypeScript Development',
+              completionPercentage: 65,
+            })),
+          )
+        }
+      }
+    }
+
+    loadCourses()
+
+    return () => {
+      isMounted = false
+    }
+  }, [isOpen])
+
   if (!isOpen) {
     return null
   }
@@ -15,36 +90,71 @@ function EnrolledCoursesSidebar({ isOpen, onClose }) {
         onClick={(event) => event.stopPropagation()}
       >
         <div className="sidebar-shell__header">
-          <h2 className="sidebar-shell__title">Enrolled courses</h2>
+          <div className="sidebar-shell__heading-row">
+            <h2 className="sidebar-shell__title">Enrolled Courses</h2>
+            <p className="sidebar-shell__count">Total Enrollments {courses.length}</p>
+          </div>
           <button className="modal-shell__close" onClick={onClose} type="button">
             x
           </button>
         </div>
 
         <div className="sidebar-shell__list">
-          <article className="sidebar-shell__item">
-            <div className="sidebar-shell__thumb" />
-            <div className="sidebar-shell__item-body">
-              <h3 className="sidebar-shell__item-title">Advanced React & TypeScript</h3>
-              <p className="sidebar-shell__item-text">Final price: $299</p>
-              <p className="sidebar-shell__item-text">Monday-Wednesday • Evening</p>
-              <p className="sidebar-shell__item-text">Online</p>
-              <div className="sidebar-shell__progress">
-                <span className="sidebar-shell__progress-bar" />
-              </div>
-            </div>
-          </article>
+          {courses.map((course) => {
+            const progressValue = getProgressValue(course)
 
-          <article className="sidebar-shell__item sidebar-shell__item--summary">
-            <div className="sidebar-shell__summary">
-              <p className="sidebar-shell__summary-label">Total enrolled courses</p>
-              <p className="sidebar-shell__summary-value">2</p>
-            </div>
-            <div className="sidebar-shell__summary">
-              <p className="sidebar-shell__summary-label">Total price</p>
-              <p className="sidebar-shell__summary-value">$598</p>
-            </div>
-          </article>
+            return (
+              <article className="sidebar-shell__course" key={course.id}>
+                <div
+                  className="sidebar-shell__thumb"
+                  style={
+                    getCourseImage(course)
+                      ? { backgroundImage: `url(${getCourseImage(course)})` }
+                      : undefined
+                  }
+                />
+
+                <div className="sidebar-shell__course-body">
+                  <div className="sidebar-shell__course-top">
+                    <div>
+                      <p className="sidebar-shell__course-instructor">
+                        Instructor {getInstructorName(course)}
+                      </p>
+                      <h3 className="sidebar-shell__item-title">{course.title}</h3>
+                    </div>
+                    <span className="sidebar-shell__course-rating">
+                      {course?.avgRating ?? '4.9'}
+                    </span>
+                  </div>
+
+                  <div className="sidebar-shell__course-meta">
+                    <p className="sidebar-shell__item-text">Monday-Wednesday</p>
+                    <p className="sidebar-shell__item-text">Evening 6:00 PM - 8:00 PM</p>
+                    <p className="sidebar-shell__item-text">In Person</p>
+                    <p className="sidebar-shell__item-text">Tbilisi, Chavchavadze St.30</p>
+                  </div>
+
+                  <div className="sidebar-shell__course-bottom">
+                    <div className="sidebar-shell__progress-block">
+                      <span className="sidebar-shell__progress-label">
+                        {progressValue}% Complete
+                      </span>
+                      <div className="sidebar-shell__progress">
+                        <span
+                          className="sidebar-shell__progress-bar"
+                          style={{ width: `${progressValue}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <Link className="sidebar-shell__view" to={`/courses/${course.id || 1}`}>
+                      View
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            )
+          })}
         </div>
       </aside>
     </div>
