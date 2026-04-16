@@ -4,6 +4,7 @@ import Footer from './components/Footer'
 import Navbar from './components/Navbar'
 import EnrolledCoursesSidebar from './modals/EnrolledCoursesSidebar'
 import LoginModal from './modals/LoginModal'
+import ProfileModal from './modals/ProfileModal'
 import SignupModal from './modals/SignupModal'
 import AppRouter from './routes/AppRouter'
 
@@ -43,6 +44,7 @@ function App() {
           isOpen={activeOverlay === 'enrolled'}
           onClose={closeOverlay}
         />
+        <ProfileModal isOpen={activeOverlay === 'profile'} onClose={closeOverlay} />
       </div>
     </BrowserRouter>
   )
