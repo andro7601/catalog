@@ -12,11 +12,17 @@ function formatPrice(price) {
   return `$${Math.round(price)}`
 }
 
-function getCourseImage(course) {
+function getCourseEntity(item) {
+  return item?.course ?? item
+}
+
+function getCourseImage(item) {
+  const course = getCourseEntity(item)
   return course?.image || course?.thumbnail || course?.coverImage || ''
 }
 
-function getCourseDescription(course) {
+function getCourseDescription(item) {
+  const course = getCourseEntity(item)
   return (
     course?.description ||
     course?.shortDescription ||
@@ -24,7 +30,8 @@ function getCourseDescription(course) {
   )
 }
 
-function getInstructorName(course) {
+function getInstructorName(item) {
+  const course = getCourseEntity(item)
   return course?.instructor?.name || course?.mentor?.name || 'Marilyn Mango'
 }
 
@@ -43,6 +50,22 @@ function getProgressValue(course) {
   }
 
   return Math.max(0, Math.min(100, Math.round(numericValue)))
+}
+
+function getCourseId(item) {
+  return getCourseEntity(item)?.id ?? item?.id
+}
+
+function getCourseTitle(item) {
+  return getCourseEntity(item)?.title ?? 'Course'
+}
+
+function getCourseRating(item) {
+  return getCourseEntity(item)?.avgRating ?? '4.9'
+}
+
+function getCourseBasePrice(item) {
+  return getCourseEntity(item)?.basePrice
 }
 
 function DashboardCourseCard({ course, isLoading }) {
@@ -76,19 +99,21 @@ function DashboardCourseCard({ course, isLoading }) {
           <span className="dashboard-course-card__lecturer">
             Lecturer {getInstructorName(course)}
           </span>
-          <span className="dashboard-course-card__rating">{course?.avgRating ?? '4.9'}</span>
+          <span className="dashboard-course-card__rating">{getCourseRating(course)}</span>
         </div>
 
-        <h3 className="dashboard-course-card__title">{course.title}</h3>
+        <h3 className="dashboard-course-card__title">{getCourseTitle(course)}</h3>
         <p className="dashboard-course-card__description">{getCourseDescription(course)}</p>
 
         <div className="dashboard-course-card__footer">
           <div className="dashboard-course-card__price-block">
             <span className="dashboard-course-card__price-label">Starting from</span>
-            <span className="dashboard-course-card__price">{formatPrice(course?.basePrice)}</span>
+            <span className="dashboard-course-card__price">
+              {formatPrice(getCourseBasePrice(course))}
+            </span>
           </div>
 
-          <Link className="dashboard-course-card__button" to={`/courses/${course.id}`}>
+          <Link className="dashboard-course-card__button" to={`/courses/${getCourseId(course)}`}>
             Details
           </Link>
         </div>
@@ -127,10 +152,10 @@ function ContinueCourseCard({ course, isLoading }) {
       <div className="continue-card__body">
         <div className="continue-card__meta">
           <span className="continue-card__lecturer">Lecturer {getInstructorName(course)}</span>
-          <span className="continue-card__rating">{course?.avgRating ?? '4.9'}</span>
+          <span className="continue-card__rating">{getCourseRating(course)}</span>
         </div>
 
-        <h3 className="continue-card__title">{course.title}</h3>
+        <h3 className="continue-card__title">{getCourseTitle(course)}</h3>
 
         <div className="continue-card__progress">
           <span className="continue-card__progress-label">{progressValue}% Complete</span>
@@ -142,7 +167,7 @@ function ContinueCourseCard({ course, isLoading }) {
               />
             </div>
 
-            <Link className="continue-card__button" to={`/courses/${course.id}`}>
+            <Link className="continue-card__button" to={`/courses/${getCourseId(course)}`}>
               View
             </Link>
           </div>
